@@ -1,0 +1,65 @@
+name: Build unsigned IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      start_url:
+        description: "Optional: page the app opens (overrides NOTES_START_URL in project.yml)"
+        required: false
+        default: ""
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build (no code signing)
+        env:
+          START_URL: ${{ inputs.start_url }}
+        run: |
+          EXTRA=()
+          if [ -n "$START_URL" ]; then
+            EXTRA+=("NOTES_START_URL=$START_URL")
+          fi
+          xcodebuild \
+            -project NotesApp.xcodeproj \
+            -scheme NotesApp \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ${EXTRA[@]+"${EXTRA[@]}"} \
+            build
+
+      - name: Package unsigned.ipa
+        run: |
+          APP_PATH=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "No .app bundle was produced" >&2
+            exit 1
+          fi
+          rm -rf Payload unsigned.ipa
+          mkdir Payload
+          cp -R "$APP_PATH" Payload/
+          zip -qry unsigned.ipa Payload
+          ls -lh unsigned.ipa
+
+      - name: Upload unsigned.ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-ipa
+          path: unsigned.ipa
+          if-no-files-found: error

@@ -1,0 +1,32 @@
+name: NotesApp
+
+options:
+  bundleIdPrefix: com.ghitn
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "16.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1,2"
+
+targets:
+  NotesApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+        excludes:
+          - Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ghitn.notesapp
+        PRODUCT_NAME: NotesApp
+        INFOPLIST_FILE: App/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        # The page the app opens (same role as `startUrl` in the Android MainActivity.kt).
+        # Override at build time with: xcodebuild ... NOTES_START_URL=https://...
+        NOTES_START_URL: "http://192.168.0.106:8092/notes-generation/dark-glass/index.html?start=panes"
